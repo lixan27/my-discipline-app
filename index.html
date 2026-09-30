@@ -1,37 +1,236 @@
-* { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
-body { background: var(--bg-color); color: var(--text); padding-bottom: 70px; user-select: none; }
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>Трекер Дисциплины и Режима</title>
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <style>
+    :root {
+      --bg-color: #0f172a;
+      --card-bg: #1e293b;
+      --accent: #3b82f6;
+      --accent-hover: #2563eb;
+      --text: #f8fafc;
+      --text-muted: #94a3b8;
+      --border: #334155;
+      --success: #10b981;
+      --warning: #f59e0b;
+      --danger: #ef4444;
+      --radius: 12px;
+    }
 
-.header { padding: 16px; background: var(--card-bg); border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
-.header h1 { font-size: 18px; font-weight: 700; color: var(--text); }
-.subtitle { font-size: 12px; color: var(--text-muted); }
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+    body { background: var(--bg-color); color: var(--text); padding-bottom: 70px; user-select: none; }
+    
+    .header { padding: 16px; background: var(--card-bg); border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
+    .header h1 { font-size: 18px; font-weight: 700; color: var(--text); }
+    .subtitle { font-size: 12px; color: var(--text-muted); }
 
-.nav { position: fixed; bottom: 0; left: 0; right: 0; background: var(--card-bg); display: flex; border-top: 1px solid var(--border); z-index: 100; }
-.nav-btn { flex: 1; padding: 12px 0; text-align: center; color: var(--text-muted); font-size: 11px; cursor: pointer; border: none; background: none; }
-.nav-btn.active { color: var(--accent); font-weight: 600; }
+    .nav { position: fixed; bottom: 0; left: 0; right: 0; background: var(--card-bg); display: flex; border-top: 1px solid var(--border); z-index: 100; }
+    .nav-btn { flex: 1; padding: 12px 0; text-align: center; color: var(--text-muted); font-size: 11px; cursor: pointer; border: none; background: none; }
+    .nav-btn.active { color: var(--accent); font-weight: 600; }
 
-.container { padding: 16px; max-width: 600px; margin: 0 auto; }
-.tab-content { display: none; }
-.tab-content.active { display: block; }
+    .container { padding: 16px; max-width: 600px; margin: 0 auto; }
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
 
-.card { background: var(--card-bg); border-radius: var(--radius); padding: 16px; margin-bottom: 16px; border: 1px solid var(--border); }
-.card-title { font-size: 15px; font-weight: 600; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; }
+    .card { background: var(--card-bg); border-radius: var(--radius); padding: 16px; margin-bottom: 16px; border: 1px solid var(--border); }
+    .card-title { font-size: 15px; font-weight: 600; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; }
 
-.progress-bar-bg { background: var(--border); height: 8px; border-radius: 4px; overflow: hidden; margin: 10px 0; }
-.progress-bar-fill { height: 100%; background: var(--accent); width: 0%; transition: width 0.3s ease; }
+    .progress-bar-bg { background: var(--border); height: 8px; border-radius: 4px; overflow: hidden; margin: 10px 0; }
+    .progress-bar-fill { height: 100%; background: var(--accent); width: 0%; transition: width 0.3s ease; }
 
-.task-list, .habit-list { list-style: none; }
-.task-item, .habit-item { display: flex; align-items: center; justify-content: space-between; padding: 10px; background: rgba(255,255,255,0.03); border-radius: 8px; margin-bottom: 8px; }
-.task-item.completed span { text-decoration: line-through; color: var(--text-muted); }
+    .task-list, .habit-list { list-style: none; }
+    .task-item, .habit-item { display: flex; align-items: center; justify-content: space-between; padding: 10px; background: rgba(255,255,255,0.03); border-radius: 8px; margin-bottom: 8px; }
+    .task-item.completed span { text-decoration: line-through; color: var(--text-muted); }
 
-input[type="checkbox"] { width: 18px; height: 18px; accent-color: var(--accent); cursor: pointer; }
-.add-form { display: flex; gap: 8px; margin-top: 10px; }
-.input-field { flex: 1; padding: 10px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg-color); color: var(--text); outline: none; }
-.btn { padding: 10px 16px; background: var(--accent); border: none; border-radius: 8px; color: white; font-weight: 600; cursor: pointer; }
+    input[type="checkbox"] { width: 18px; height: 18px; accent-color: var(--accent); cursor: pointer; }
+    .add-form { display: flex; gap: 8px; margin-top: 10px; }
+    .input-field { flex: 1; padding: 10px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg-color); color: var(--text); outline: none; }
+    .btn { padding: 10px 16px; background: var(--accent); border: none; border-radius: 8px; color: white; font-weight: 600; cursor: pointer; }
+    
+    .streak-badge { background: rgba(59, 130, 246, 0.2); color: var(--accent); padding: 4px 8px; border-radius: 12px; font-size: 12px; font-weight: 600; }
+    .rule-box { background: rgba(245, 158, 11, 0.1); border-left: 4px solid var(--warning); padding: 10px; border-radius: 4px; font-size: 13px; margin-bottom: 16px; }
+  </style>
+</head>
+<body>
 
-.streak-badge { background: rgba(59, 130, 246, 0.2); color: var(--accent); padding: 4px 8px; border-radius: 12px; font-size: 12px; font-weight: 600; }
-.rule-box { background: rgba(245, 158, 11, 0.1); border-left: 4px solid var(--warning); padding: 10px; border-radius: 4px; font-size: 13px; margin-bottom: 16px; }
-<p id="quote" style="font-style: italic; color: var(--text-muted); font-size: 14px;">
-      "Дисциплина — это решение делать то, чего не хочется делать, чтобы достичь того, чего хочешь достичь."
-    </p>
+  <div class="header">
+    <div>
+      <h1 id="user-title">Мой Режим и Дисциплина</h1>
+      <div class="subtitle" id="current-date"></div>
+    </div>
   </div>
-</div>
+
+  <div class="container">
+    <!-- ВКЛАДКА "СЕГОДНЯ" -->
+    <div id="tab-today" class="tab-content active">
+      <div class="card">
+        <div class="card-title">Прогресс дня <span id="progress-text">0%</span></div>
+        <div class="progress-bar-bg">
+          <div class="progress-bar-fill" id="progress-fill"></div>
+        </div>
+      </div>
+
+      <div class="rule-box">
+        ⚡ <strong>Правило 2 минут:</strong> Если задача занимает меньше 2 минут, сделайте её прямо сейчас.
+      </div>
+
+      <div class="card">
+        <div class="card-title">Задачи на день</div>
+        <ul class="task-list" id="today-tasks"></ul>
+        <form class="add-form" id="add-task-form">
+          <input type="text" class="input-field" id="new-task-input" placeholder="Новая задача..." required>
+          <button type="submit" class="btn">+</button>
+        </form>
+      </div>
+    </div>
+
+    <!-- ВКЛАДКА "ПРИВЫЧКИ" -->
+    <div id="tab-habits" class="tab-content">
+      <div class="card">
+        <div class="card-title">Трекер Привычек</div>
+        <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 12px;">Главное правило дисциплины — не пропускать 2 дня подряд!</p>
+        <ul class="habit-list" id="habit-list"></ul>
+        <form class="add-form" id="add-habit-form">
+          <input type="text" class="input-field" id="new-habit-input" placeholder="Новая привычка..." required>
+          <button type="submit" class="btn">+</button>
+        </form>
+      </div>
+    </div>
+
+    <!-- ВКЛАДКА "СТАТИСТИКА" -->
+    <div id="tab-stats" class="tab-content">
+      <div class="card">
+        <div class="card-title">Статистика дисциплины</div>
+        <p style="margin-bottom: 8px;">Выполнено задач: <strong id="total-tasks-count">0</strong></p>
+        <p>Активных привычек: <strong id="total-habits-count">0</strong></p>
+      </div>
+      <div class="card">
+        <div class="card-title">Совет дня</div>
+        <p id="quote" style="font-style: italic; color: var(--text-muted); font-size: 14px;">
+          "Дисциплина — это решение делать то, чего не хочется делать, чтобы достичь того, чего хочешь достичь."
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <div class="nav">
+    <button class="nav-btn active" onclick="switchTab('today')">Сегодня</button>
+    <button class="nav-btn" onclick="switchTab('habits')">Привычки</button>
+    <button class="nav-btn" onclick="switchTab('stats')">Статистика</button>
+  </div>
+
+  <script>
+    const tg = window.Telegram?.WebApp;
+    if (tg) {
+      tg.ready();
+      tg.expand();
+    }
+
+    let state = JSON.parse(localStorage.getItem('appState')) || {
+      tasks: [
+        { id: 1, text: 'Подъем и стакан воды', done: false },
+        { id: 2, text: 'Фокус-задача дня (1.5 часа)', done: false },
+        { id: 3, text: 'Вечерний анализ и отбой', done: false }
+      ],
+      habits: [
+        { id: 1, name: 'Зарядка / Спорт', streak: 3, doneToday: false },
+        { id: 2, name: 'Чтение 15 минут', streak: 1, doneToday: false }
+      ]
+    };
+
+    function saveState() {
+      localStorage.setItem('appState', JSON.stringify(state));
+      render();
+    }
+
+    function switchTab(tabId) {
+      document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+      document.querySelectorAll('.nav-btn').forEach(el => el.classList.remove('active'));
+      document.getElementById('tab-' + tabId).classList.add('active');
+      event.currentTarget.classList.add('active');
+    }
+
+    function render() {
+      const dateOptions = { weekday: 'long', month: 'short', day: 'numeric' };
+      document.getElementById('current-date').innerText = new Date().toLocaleDateString('ru-RU', dateOptions);
+
+      const tasksList = document.getElementById('today-tasks');
+      tasksList.innerHTML = '';
+      let doneCount = 0;
+
+      state.tasks.forEach((task) => {
+        if (task.done) doneCount++;
+        const li = document.createElement('li');
+        li.className = `task-item ${task.done ? 'completed' : ''}`;
+        li.innerHTML = `
+          <span>${task.text}</span>
+          <input type="checkbox" ${task.done ? 'checked' : ''} onchange="toggleTask(${task.id})">
+        `;
+        tasksList.appendChild(li);
+      });
+
+      const progress = state.tasks.length ? Math.round((doneCount / state.tasks.length) * 100) : 0;
+      document.getElementById('progress-fill').style.width = progress + '%';
+      document.getElementById('progress-text').innerText = progress + '%';
+
+      const habitList = document.getElementById('habit-list');
+      habitList.innerHTML = '';
+      state.habits.forEach((habit) => {
+        const li = document.createElement('li');
+        li.className = 'habit-item';
+        li.innerHTML = `
+          <div>
+            <div>${habit.name}</div>
+            <span class="streak-badge">🔥 ${habit.streak} дн.</span>
+          </div>
+          <input type="checkbox" ${habit.doneToday ? 'checked' : ''} onchange="toggleHabit(${habit.id})">
+        `;
+        habitList.appendChild(li);
+      });
+
+      document.getElementById('total-tasks-count').innerText = doneCount;
+      document.getElementById('total-habits-count').innerText = state.habits.length;
+    }
+
+    function toggleTask(id) {
+      const task = state.tasks.find(t => t.id === id);
+      if (task) task.done = !task.done;
+      saveState();
+    }
+
+    function toggleHabit(id) {
+      const habit = state.habits.find(h => h.id === id);
+      if (habit) {
+        habit.doneToday = !habit.doneToday;
+        habit.streak += habit.doneToday ? 1 : -1;
+      }
+      saveState();
+    }
+
+    document.getElementById('add-task-form').addEventListener('submit', (e) => {
+      e.preventDefault();
+      const input = document.getElementById('new-task-input');
+      if (input.value.trim()) {
+        state.tasks.push({ id: Date.now(), text: input.value.trim(), done: false });
+        input.value = '';
+        saveState();
+      }
+    });
+
+    document.getElementById('add-habit-form').addEventListener('submit', (e) => {
+      e.preventDefault();
+      const input = document.getElementById('new-habit-input');
+      if (input.value.trim()) {
+        state.habits.push({ id: Date.now(), name: input.value.trim(), streak: 0, doneToday: false });
+        input.value = '';
+        saveState();
+      }
+    });
+
+    render();
+  </script>
+</body>
+</html>
