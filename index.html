@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-  <title>Мой Режим и Дисциплина</title>
+  <title>Трекер и Планировщик</title>
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <style>
     :root {
@@ -21,11 +21,15 @@
     }
 
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
-    body { background: var(--bg-color); color: var(--text); padding-bottom: 70px; user-select: none; }
+    body { background: var(--bg-color); color: var(--text); padding-bottom: 80px; user-select: none; }
     
     .header { padding: 16px; background: var(--card-bg); border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
     .header h1 { font-size: 18px; font-weight: 700; color: var(--text); }
     .subtitle { font-size: 12px; color: var(--text-muted); }
+
+    .date-navigator { display: flex; align-items: center; justify-content: space-between; background: rgba(255,255,255,0.03); padding: 8px 12px; border-radius: 8px; margin-bottom: 12px; }
+    .date-btn { background: var(--border); color: var(--text); border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 13px; }
+    .current-date-title { font-weight: 600; font-size: 14px; }
 
     .nav { position: fixed; bottom: 0; left: 0; right: 0; background: var(--card-bg); display: flex; border-top: 1px solid var(--border); z-index: 100; }
     .nav-btn { flex: 1; padding: 12px 0; text-align: center; color: var(--text-muted); font-size: 11px; cursor: pointer; border: none; background: none; }
@@ -42,107 +46,150 @@
     .progress-bar-fill { height: 100%; background: var(--accent); width: 0%; transition: width 0.3s ease; }
 
     .task-list, .habit-list { list-style: none; }
-    .task-item, .habit-item { display: flex; align-items: center; justify-content: space-between; padding: 10px; background: rgba(255,255,255,0.03); border-radius: 8px; margin-bottom: 8px; }
+    .task-item { display: flex; align-items: center; justify-content: space-between; padding: 10px; background: rgba(255,255,255,0.03); border-radius: 8px; margin-bottom: 8px; gap: 8px; }
     .task-item.completed span { text-decoration: line-through; color: var(--text-muted); }
+    .task-info { display: flex; align-items: center; gap: 8px; flex: 1; }
+
+    .badge { font-size: 10px; padding: 2px 6px; border-radius: 4px; text-transform: uppercase; font-weight: 600; }
+    .badge-work { background: rgba(59, 130, 246, 0.2); color: #60a5fa; }
+    .badge-study { background: rgba(168, 85, 247, 0.2); color: #c084fc; }
+    .badge-personal { background: rgba(16, 185, 129, 0.2); color: #34d399; }
+    .badge-health { background: rgba(245, 158, 11, 0.2); color: #fbbf24; }
+
+    .priority-high { border-left: 3px solid var(--danger); }
+    .priority-medium { border-left: 3px solid var(--warning); }
+    .priority-low { border-left: 3px solid var(--success); }
 
     input[type="checkbox"] { width: 18px; height: 18px; accent-color: var(--accent); cursor: pointer; }
-    .add-form { display: flex; gap: 8px; margin-top: 10px; }
-    .input-field { flex: 1; padding: 10px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg-color); color: var(--text); outline: none; }
-    .btn { padding: 10px 16px; background: var(--accent); border: none; border-radius: 8px; color: white; font-weight: 600; cursor: pointer; }
     
-    .streak-badge { background: rgba(59, 130, 246, 0.2); color: var(--accent); padding: 4px 8px; border-radius: 12px; font-size: 12px; font-weight: 600; }
-    .rule-box { background: rgba(245, 158, 11, 0.1); border-left: 4px solid var(--warning); padding: 10px; border-radius: 4px; font-size: 13px; margin-bottom: 16px; }
+    .add-form { display: flex; flex-direction: column; gap: 8px; margin-top: 12px; }
+    .form-row { display: flex; gap: 8px; }
+    .input-field, .select-field { padding: 10px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg-color); color: var(--text); outline: none; font-size: 13px; }
+    .input-field { flex: 1; }
+    .btn { padding: 10px 16px; background: var(--accent); border: none; border-radius: 8px; color: white; font-weight: 600; cursor: pointer; }
+    .btn-delete { background: none; border: none; color: var(--danger); cursor: pointer; font-size: 14px; padding: 0 4px; }
   </style>
 </head>
 <body>
 
   <div class="header">
     <div>
-      <h1 id="user-title">Мой Режим и Дисциплина</h1>
-      <div class="subtitle" id="current-date"></div>
+      <h1>Планировщик и Дисциплина</h1>
+      <div class="subtitle">Планирование дня, недели и месяца</div>
     </div>
   </div>
 
   <div class="container">
-    <!-- ВКЛАДКА "СЕГОДНЯ" -->
-    <div id="tab-today" class="tab-content active">
+    
+    <!-- ВКЛАДКА "ДЕНЬ" -->
+    <div id="tab-day" class="tab-content active">
+      <div class="date-navigator">
+        <button class="date-btn" onclick="changeDate(-1)">← Вчера</button>
+        <span class="current-date-title" id="selected-date-display">Сегодня</span>
+        <button class="date-btn" onclick="changeDate(1)">Завтра →</button>
+      </div>
+
       <div class="card">
-        <div class="card-title">Прогресс дня <span id="progress-text">0%</span></div>
+        <div class="card-title">Прогресс выбранного дня <span id="progress-text">0%</span></div>
         <div class="progress-bar-bg">
           <div class="progress-bar-fill" id="progress-fill"></div>
         </div>
       </div>
 
-      <div class="rule-box">
-        ⚡ <strong>Правило 2 минут:</strong> Если задача занимает меньше 2 минут, сделайте её прямо сейчас.
+      <div class="card">
+        <div class="card-title">Задачи на день</div>
+        <ul class="task-list" id="day-tasks-list"></ul>
+
+        <form class="add-form" id="add-task-form">
+          <input type="text" class="input-field" id="new-task-text" placeholder="Описание задачи..." required>
+          <div class="form-row">
+            <select class="select-field" id="new-task-category">
+              <option value="work">Работа</option>
+              <option value="study">Учёба</option>
+              <option value="personal">Личное</option>
+              <option value="health">Здоровье</option>
+            </select>
+            <select class="select-field" id="new-task-priority">
+              <option value="low">Низкий приоритет</option>
+              <option value="medium" selected>Средний приоритет</option>
+              <option value="high">Высокий приоритет</option>
+            </select>
+            <button type="submit" class="btn" style="flex:1;">Добавить</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- ВКЛАДКА "ОБЗОР (НЕДЕЛЯ / МЕСЯЦ)" -->
+    <div id="tab-overview" class="tab-content">
+      <div class="card">
+        <div class="card-title">Быстрое планирование на будущие даты</div>
+        <form class="add-form" id="future-task-form">
+          <input type="date" class="input-field" id="future-date-input" required>
+          <input type="text" class="input-field" id="future-task-text" placeholder="Запланировать задачу..." required>
+          <div class="form-row">
+            <select class="select-field" id="future-task-category">
+              <option value="work">Работа</option>
+              <option value="study">Учёба</option>
+              <option value="personal">Личное</option>
+              <option value="health">Здоровье</option>
+            </select>
+            <button type="submit" class="btn" style="flex:1;">Запланировать</button>
+          </div>
+        </form>
       </div>
 
       <div class="card">
-        <div class="card-title">Задачи на день</div>
-        <ul class="task-list" id="today-tasks"></ul>
-        <form class="add-form" id="add-task-form">
-          <input type="text" class="input-field" id="new-task-input" placeholder="Новая задача..." required>
-          <button type="submit" class="btn">+</button>
-        </form>
+        <div class="card-title">Предстоящие задачи</div>
+        <ul class="task-list" id="upcoming-tasks-list"></ul>
       </div>
     </div>
 
     <!-- ВКЛАДКА "ПРИВЫЧКИ" -->
     <div id="tab-habits" class="tab-content">
       <div class="card">
-        <div class="card-title">Трекер Привычек</div>
-        <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 12px;">Главное правило дисциплины — не пропускать 2 дня подряд!</p>
-        <ul class="habit-list" id="habit-list"></ul>
-        <form class="add-form" id="add-habit-form">
+        <div class="card-title">Ежедневные привычки</div>
+        <ul class="task-list" id="habit-list"></ul>
+        <form class="add-form" id="add-habit-form" style="flex-direction:row;">
           <input type="text" class="input-field" id="new-habit-input" placeholder="Новая привычка..." required>
           <button type="submit" class="btn">+</button>
         </form>
       </div>
     </div>
 
-    <!-- ВКЛАДКА "СТАТИСТИКА" -->
-    <div id="tab-stats" class="tab-content">
-      <div class="card">
-        <div class="card-title">Статистика дисциплины</div>
-        <p style="margin-bottom: 8px;">Выполнено задач: <strong id="total-tasks-count">0</strong></p>
-        <p>Активных привычек: <strong id="total-habits-count">0</strong></p>
-      </div>
-      <div class="card">
-        <div class="card-title">Совет дня</div>
-        <p id="quote" style="font-style: italic; color: var(--text-muted); font-size: 14px;">
-          "Дисциплина — это решение делать то, чего не хочется делать, чтобы достичь того, чего хочешь достичь."
-        </p>
-      </div>
-    </div>
   </div>
 
   <div class="nav">
-    <button class="nav-btn active" onclick="switchTab('today')">Сегодня</button>
+    <button class="nav-btn active" onclick="switchTab('day')">День</button>
+    <button class="nav-btn" onclick="switchTab('overview')">Обзор / План</button>
     <button class="nav-btn" onclick="switchTab('habits')">Привычки</button>
-    <button class="nav-btn" onclick="switchTab('stats')">Статистика</button>
   </div>
 
   <script>
     const tg = window.Telegram?.WebApp;
-    if (tg) {
-      tg.ready();
-      tg.expand();
-    }
+    if (tg) { tg.ready(); tg.expand(); }
 
-    let state = JSON.parse(localStorage.getItem('appState')) || {
-      tasks: [
-        { id: 1, text: 'Подъем и стакан воды', done: false },
-        { id: 2, text: 'Фокус-задача дня (1.5 часа)', done: false },
-        { id: 3, text: 'Вечерний анализ и отбой', done: false }
-      ],
+    let currentDate = new Date();
+
+    let state = JSON.parse(localStorage.getItem('appPlannerState')) || {
+      tasks: {}, // { "YYYY-MM-DD": [ { id, text, category, priority, done } ] }
       habits: [
-        { id: 1, name: 'Зарядка / Спорт', streak: 3, doneToday: false },
-        { id: 2, name: 'Чтение 15 минут', streak: 1, doneToday: false }
+        { id: 1, name: 'Зарядка / Спорт', doneToday: false },
+        { id: 2, name: 'Чтение 15 минут', doneToday: false }
       ]
     };
 
     function saveState() {
-      localStorage.setItem('appState', JSON.stringify(state));
+      localStorage.setItem('appPlannerState', JSON.stringify(state));
+      render();
+    }
+
+    function formatDateKey(date) {
+      return date.toISOString().split('T')[0];
+    }
+
+    function changeDate(days) {
+      currentDate.setDate(currentDate.getDate() + days);
       render();
     }
 
@@ -153,70 +200,130 @@
       event.currentTarget.classList.add('active');
     }
 
+    function getCategoryBadge(cat) {
+      const names = { work: 'Работа', study: 'Учёба', personal: 'Личное', health: 'Здоровье' };
+      return `<span class="badge badge-${cat}">${names[cat] || cat}</span>`;
+    }
+
     function render() {
-      const dateOptions = { weekday: 'long', month: 'short', day: 'numeric' };
-      document.getElementById('current-date').innerText = new Date().toLocaleDateString('ru-RU', dateOptions);
+      const dateKey = formatDateKey(currentDate);
+      const todayKey = formatDateKey(new Date());
 
-      const tasksList = document.getElementById('today-tasks');
-      tasksList.innerHTML = '';
+      // Отображение даты
+      let dateTitle = currentDate.toLocaleDateString('ru-RU', { day: 'numeric', month: 'short', weekday: 'short' });
+      if (dateKey === todayKey) dateTitle = 'Сегодня (' + dateTitle + ')';
+      document.getElementById('selected-date-display').innerText = dateTitle;
+
+      // Список задач выбранного дня
+      const dayTasks = state.tasks[dateKey] || [];
+      const dayList = document.getElementById('day-tasks-list');
+      dayList.innerHTML = dayTasks.length ? '' : '<li style="color: var(--text-muted); font-size:13px; text-align:center; padding:10px;">Задач на этот день нет</li>';
+
       let doneCount = 0;
-
-      state.tasks.forEach((task) => {
+      dayTasks.forEach(task => {
         if (task.done) doneCount++;
         const li = document.createElement('li');
-        li.className = `task-item ${task.done ? 'completed' : ''}`;
+        li.className = `task-item priority-${task.priority} ${task.done ? 'completed' : ''}`;
         li.innerHTML = `
-          <span>${task.text}</span>
-          <input type="checkbox" ${task.done ? 'checked' : ''} onchange="toggleTask(${task.id})">
+          <div class="task-info">
+            <input type="checkbox" ${task.done ? 'checked' : ''} onchange="toggleTask('${dateKey}', ${task.id})">
+            <span>${task.text}</span>
+            ${getCategoryBadge(task.category)}
+          </div>
+          <button class="btn-delete" onclick="deleteTask('${dateKey}', ${task.id})">✕</button>
         `;
-        tasksList.appendChild(li);
+        dayList.appendChild(li);
       });
 
-      const progress = state.tasks.length ? Math.round((doneCount / state.tasks.length) * 100) : 0;
+      const progress = dayTasks.length ? Math.round((doneCount / dayTasks.length) * 100) : 0;
       document.getElementById('progress-fill').style.width = progress + '%';
       document.getElementById('progress-text').innerText = progress + '%';
 
+      // Список предстоящих задач (Вкладка "Обзор")
+      const upcomingList = document.getElementById('upcoming-tasks-list');
+      upcomingList.innerHTML = '';
+      const sortedDates = Object.keys(state.tasks).filter(d => d >= todayKey).sort();
+
+      if (sortedDates.length === 0) {
+        upcomingList.innerHTML = '<li style="color: var(--text-muted); font-size:13px; text-align:center; padding:10px;">Нет запланированных задач</li>';
+      } else {
+        sortedDates.forEach(d => {
+          state.tasks[d].forEach(task => {
+            const li = document.createElement('li');
+            li.className = `task-item priority-${task.priority} ${task.done ? 'completed' : ''}`;
+            li.innerHTML = `
+              <div class="task-info">
+                <span style="font-size:11px; color:var(--accent); font-weight:600;">${d}</span>
+                <span>${task.text}</span>
+                ${getCategoryBadge(task.category)}
+              </div>
+              <button class="btn-delete" onclick="deleteTask('${d}', ${task.id})">✕</button>
+            `;
+            upcomingList.appendChild(li);
+          });
+        });
+      }
+
+      // Список привычек
       const habitList = document.getElementById('habit-list');
       habitList.innerHTML = '';
-      state.habits.forEach((habit) => {
+      state.habits.forEach(h => {
         const li = document.createElement('li');
-        li.className = 'habit-item';
+        li.className = 'task-item';
         li.innerHTML = `
-          <div>
-            <div>${habit.name}</div>
-            <span class="streak-badge">🔥 ${habit.streak} дн.</span>
-          </div>
-          <input type="checkbox" ${habit.doneToday ? 'checked' : ''} onchange="toggleHabit(${habit.id})">
+          <span>${h.name}</span>
+          <input type="checkbox" ${h.doneToday ? 'checked' : ''} onchange="toggleHabit(${h.id})">
         `;
         habitList.appendChild(li);
       });
-
-      document.getElementById('total-tasks-count').innerText = doneCount;
-      document.getElementById('total-habits-count').innerText = state.habits.length;
     }
 
-    function toggleTask(id) {
-      const task = state.tasks.find(t => t.id === id);
+    function toggleTask(dateKey, id) {
+      const task = state.tasks[dateKey]?.find(t => t.id === id);
       if (task) task.done = !task.done;
       saveState();
     }
 
-    function toggleHabit(id) {
-      const habit = state.habits.find(h => h.id === id);
-      if (habit) {
-        habit.doneToday = !habit.doneToday;
-        habit.streak += habit.doneToday ? 1 : -1;
+    function deleteTask(dateKey, id) {
+      if (state.tasks[dateKey]) {
+        state.tasks[dateKey] = state.tasks[dateKey].filter(t => t.id !== id);
+        if (state.tasks[dateKey].length === 0) delete state.tasks[dateKey];
+        saveState();
       }
+    }
+
+    function addTaskForDate(dateKey, text, category, priority) {
+      if (!state.tasks[dateKey]) state.tasks[dateKey] = [];
+      state.tasks[dateKey].push({ id: Date.now(), text, category, priority, done: false });
+      saveState();
+    }
+
+    function toggleHabit(id) {
+      const h = state.habits.find(item => item.id === id);
+      if (h) h.doneToday = !h.doneToday;
       saveState();
     }
 
     document.getElementById('add-task-form').addEventListener('submit', (e) => {
       e.preventDefault();
-      const input = document.getElementById('new-task-input');
-      if (input.value.trim()) {
-        state.tasks.push({ id: Date.now(), text: input.value.trim(), done: false });
-        input.value = '';
-        saveState();
+      const text = document.getElementById('new-task-text').value.trim();
+      const cat = document.getElementById('new-task-category').value;
+      const prio = document.getElementById('new-task-priority').value;
+      if (text) {
+        addTaskForDate(formatDateKey(currentDate), text, cat, prio);
+        document.getElementById('new-task-text').value = '';
+      }
+    });
+
+    document.getElementById('future-task-form').addEventListener('submit', (e) => {
+      e.preventDefault();
+      const dateVal = document.getElementById('future-date-input').value;
+      const text = document.getElementById('future-task-text').value.trim();
+      const cat = document.getElementById('future-task-category').value;
+      if (dateVal && text) {
+        addTaskForDate(dateVal, text, cat, 'medium');
+        document.getElementById('future-task-text').value = '';
+        alert('Задача успешно запланирована на ' + dateVal);
       }
     });
 
@@ -224,12 +331,13 @@
       e.preventDefault();
       const input = document.getElementById('new-habit-input');
       if (input.value.trim()) {
-        state.habits.push({ id: Date.now(), name: input.value.trim(), streak: 0, doneToday: false });
+        state.habits.push({ id: Date.now(), name: input.value.trim(), doneToday: false });
         input.value = '';
         saveState();
       }
     });
 
+    document.getElementById('future-date-input').value = formatDateKey(new Date());
     render();
   </script>
 </body>
